@@ -25,6 +25,19 @@ function App() {
     setTexto('')
   }
 
+
+  function alternarCompletada(id: number) {
+    setTareas(
+      tareas.map((t) =>
+        t.id === id ? { ...t, completada: !t.completada } : t
+      )
+    )
+  }
+
+  function eliminarTarea(id: number) {
+    setTareas(tareas.filter((t) => t.id !== id))
+  }
+
   return (
     <main>
       <h1>Mi lista de tareas</h1>
@@ -40,7 +53,21 @@ function App() {
 
       <ul>
         {tareas.map((t) => (
-          <li key={t.id}>{t.texto}</li>
+          <li key={t.id}>
+            <input
+              type="checkbox"
+              checked={t.completada}
+              onChange={() => alternarCompletada(t.id)}
+            />
+            <span
+              style={{
+                textDecoration: t.completada ? 'line-through' : 'none',
+              }}
+            >
+              {t.texto}
+            </span>
+            <button onClick={() => eliminarTarea(t.id)}>Eliminar</button>
+          </li>
         ))}
       </ul>
     </main>
