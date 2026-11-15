@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import './App.css'
 
 type Tarea = {
@@ -7,9 +7,16 @@ type Tarea = {
   completada: boolean
 }
 
+const API = 'http://localhost:3001/api/tareas'
+
 function App() {
   const [tareas, setTareas] = useState<Tarea[]>([])
   const [texto, setTexto] = useState('')
+    useEffect(() => {
+    fetch(API)
+      .then((respuesta) => respuesta.json())
+      .then((datos) => setTareas(datos))
+  }, [])
 
   function agregarTarea(e: FormEvent) {
     e.preventDefault()
@@ -40,7 +47,7 @@ function App() {
 
   return (
     <main>
-      <h1>Mi lista de tareas</h1>
+      <h1>Lista de Tareas</h1>
 
       <form onSubmit={agregarTarea}>
         <input
