@@ -18,30 +18,37 @@ function App() {
       .then((datos) => setTareas(datos))
   }, [])
 
-  function agregarTarea(e: FormEvent) {
+  async function agregarTarea(e: FormEvent) {
     e.preventDefault()
     const limpio = texto.trim()
     if (limpio === '') return
 
-    const nueva: Tarea = {
-      id: Date.now(),
-      texto: limpio,
-      completada: false,
-    }
+    const respuesta = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texto: limpio }),
+    })
+    if (!respuesta.ok) return
+
+    const nueva: Tarea = await respuesta.json()
     setTareas([...tareas, nueva])
     setTexto('')
   }
 
+    async function alternarCompletada(id: number) {
+    console.log('Click en check, id:', id)
+    const respuesta = await fetch(`${API}/${id}`, { method: 'PATCH' })
+    if (!respuesta.ok) return
 
-  function alternarCompletada(id: number) {
-    setTareas(
-      tareas.map((t) =>
-        t.id === id ? { ...t, completada: !t.completada } : t
-      )
-    )
+    const actualizada: Tarea = await respuesta.json()
+    setTareas(tareas.map((t) => (t.id === id ? actualizada : t)))
   }
 
-  function eliminarTarea(id: number) {
+  async function eliminarTarea(id: number) {
+    console.log('Click en eliminar, id:', id)
+    const respuesta = await fetch(`${API}/${id}`, { method: 'DELETE' })
+    if (!respuesta.ok) return
+
     setTareas(tareas.filter((t) => t.id !== id))
   }
 
