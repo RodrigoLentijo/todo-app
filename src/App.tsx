@@ -123,12 +123,17 @@ function App() {
     setTareas(tareas.filter((t) => t.id !== id))
   }
 
-  if (!token) {
+    if (!token) {
     return (
-      <main>
+      <main className="tarjeta">
         <h1>{modo === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}</h1>
+        <p className="subtitulo">
+          {modo === 'login'
+            ? 'Entrá para ver tus tareas.'
+            : 'Registrate para guardar tus tareas.'}
+        </p>
 
-        <form onSubmit={enviarCredenciales}>
+        <form className="formulario vertical" onSubmit={enviarCredenciales}>
           <input
             type="email"
             value={email}
@@ -141,14 +146,15 @@ function App() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Contraseña (mínimo 8 caracteres)"
           />
-          <button type="submit">
+          <button className="primario" type="submit">
             {modo === 'login' ? 'Entrar' : 'Registrarme'}
           </button>
         </form>
 
-        {error && <p style={{ color: 'crimson' }}>{error}</p>}
+        {error && <p className="error">{error}</p>}
 
         <button
+          className="enlace"
           onClick={() => {
             setModo(modo === 'login' ? 'registro' : 'login')
             setError('')
@@ -162,38 +168,47 @@ function App() {
     )
   }
 
+  const pendientes = tareas.filter((t) => !t.completada).length
+
   return (
-    <main>
+    <main className="tarjeta">
+      <div className="barra-sesion">
+        <span>{emailSesion}</span>
+        <button className="secundario" onClick={cerrarSesion}>
+          Cerrar sesión
+        </button>
+      </div>
+
       <h1>Lista de Tareas</h1>
-      <p>
-        Sesión: {emailSesion} <button onClick={cerrarSesion}>Cerrar sesión</button>
+      <p className="subtitulo">
+        {tareas.length === 0
+          ? 'Todavía no hay tareas. ¡Agregá la primera!'
+          : `${pendientes} pendientes de ${tareas.length}`}
       </p>
 
-      <form onSubmit={agregarTarea}>
+      <form className="formulario" onSubmit={agregarTarea}>
         <input
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
           placeholder="Nueva tarea..."
         />
-        <button type="submit">Agregar</button>
+        <button className="primario" type="submit">
+          Agregar
+        </button>
       </form>
 
-      <ul>
+      <ul className="lista">
         {tareas.map((t) => (
-          <li key={t.id}>
+          <li key={t.id} className={t.completada ? 'tarea completada' : 'tarea'}>
             <input
               type="checkbox"
               checked={t.completada}
               onChange={() => alternarCompletada(t.id)}
             />
-            <span
-              style={{
-                textDecoration: t.completada ? 'line-through' : 'none',
-              }}
-            >
-              {t.texto}
-            </span>
-            <button onClick={() => eliminarTarea(t.id)}>Eliminar</button>
+            <span>{t.texto}</span>
+            <button className="peligro" onClick={() => eliminarTarea(t.id)}>
+              Eliminar
+            </button>
           </li>
         ))}
       </ul>
