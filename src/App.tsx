@@ -7,6 +7,8 @@ type Tarea = {
   completada: boolean
 }
 
+type Modo = 'login' | 'registro' | 'verificar'
+
 const API = 'http://localhost:3001/api'
 
 function pedir(ruta: string, token: string | null, opciones: RequestInit = {}) {
@@ -36,8 +38,10 @@ function App() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [modo, setModo] = useState<'login' | 'registro'>('login')
+  const [codigo, setCodigo] = useState('')
+  const [modo, setModo] = useState<Modo>('login')
   const [error, setError] = useState('')
+  const [mensaje, setMensaje] = useState('')
 
   useEffect(() => {
     if (!token) return
@@ -54,11 +58,30 @@ function App() {
       .then((datos) => setTareas(datos))
   }, [token])
 
+  function cambiarModo(nuevo: Modo) {
+    setModo(nuevo)
+    setError('')
+    setMensaje('')
+  }
+
+  function iniciarSesion(datos: { token: string; email: string }) {
+    localStorage.setItem('token', datos.token)
+    localStorage.setItem('email', datos.email)
+    setToken(datos.token)
+    setEmailSesion(datos.email)
+    setEmail('')
+    setPassword('')
+    setCodigo('')
+    setError('')
+    setMensaje('')
+  }
+
   function cerrarSesion() {
     limpiarSesion()
     setToken(null)
     setEmailSesion(null)
     setTareas([])
+    setModo('login')
   }
 
   function sesionVencida(respuesta: Response) {
@@ -70,6 +93,7 @@ function App() {
   async function enviarCredenciales(e: FormEvent) {
     e.preventDefault()
     setError('')
+    setMensaje('')
 
     const ruta = modo === 'login' ? '/login' : '/registro'
     const respuesta = await fetch(`${API}${ruta}`, {
@@ -79,17 +103,63 @@ function App() {
     })
     const datos = await respuesta.json()
 
+    if (
+      modo === 'login' &&
+      respuesta.status === 403 &&
+      datos.requiereVerificacion
+    ) {
+      setPassword('')
+      setModo('verificar')
+      setMensaje(
+        'Tu cuenta todavía no está verificada. Ingresá el código que te enviamos o pedí uno nuevo.'
+      )
+      return
+    }
+
     if (!respuesta.ok) {
       setError(datos.error ?? 'Ocurrió un error')
       return
     }
 
-    localStorage.setItem('token', datos.token)
-    localStorage.setItem('email', datos.email)
-    setToken(datos.token)
-    setEmailSesion(datos.email)
-    setEmail('')
+    if (modo === 'login') {
+      iniciarSesion(datos)
+      return
+    }
+
     setPassword('')
+    setModo('verificar')
+    setMensaje(`${datos.mensaje}. Revisá la casilla de ${datos.email}.`)
+  }
+
+  async function verificarCodigo(e: FormEvent) {
+    e.preventDefault()
+    setError('')
+
+    const respuesta = await fetch(`${API}/verificar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, codigo }),
+    })
+    const datos = await respuesta.json()
+
+    if (!respuesta.ok) {
+      setError(datos.error ?? 'Ocurrió un error')
+      return
+    }
+
+    iniciarSesion(datos)
+  }
+
+  async function reenviarCodigo() {
+    setError('')
+
+    const respuesta = await fetch(`${API}/reenviar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    })
+    const datos = await respuesta.json()
+    setMensaje(datos.mensaje ?? '')
   }
 
   async function agregarTarea(e: FormEvent) {
@@ -123,7 +193,46 @@ function App() {
     setTareas(tareas.filter((t) => t.id !== id))
   }
 
-    if (!token) {
+  if (!token && modo === 'verificar') {
+    return (
+      <main className="tarjeta">
+        <h1>Verificá tu correo</h1>
+        <p className="subtitulo">
+          Ingresá el código de 6 dígitos que te enviamos a {email}.
+        </p>
+
+        {mensaje && <p className="mensaje">{mensaje}</p>}
+
+        <form className="formulario vertical" onSubmit={verificarCodigo}>
+          <input
+            value={codigo}
+            inputMode="numeric"
+            maxLength={6}
+            onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ''))}
+            placeholder="Código de 6 dígitos"
+          />
+          <button
+            className="primario"
+            type="submit"
+            disabled={codigo.length !== 6}
+          >
+            Verificar
+          </button>
+        </form>
+
+        {error && <p className="error">{error}</p>}
+
+        <button className="enlace" onClick={reenviarCodigo}>
+          Reenviar código
+        </button>
+        <button className="enlace" onClick={() => cambiarModo('login')}>
+          Volver a iniciar sesión
+        </button>
+      </main>
+    )
+  }
+
+  if (!token) {
     return (
       <main className="tarjeta">
         <h1>{modo === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}</h1>
@@ -155,10 +264,7 @@ function App() {
 
         <button
           className="enlace"
-          onClick={() => {
-            setModo(modo === 'login' ? 'registro' : 'login')
-            setError('')
-          }}
+          onClick={() => cambiarModo(modo === 'login' ? 'registro' : 'login')}
         >
           {modo === 'login'
             ? '¿No tenés cuenta? Registrate'
