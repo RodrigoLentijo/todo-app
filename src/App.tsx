@@ -9,7 +9,7 @@ type Tarea = {
 
 type Modo = 'login' | 'registro' | 'verificar'
 
-const API = 'http://localhost:3001/api'
+const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api'
 
 function pedir(ruta: string, token: string | null, opciones: RequestInit = {}) {
   return fetch(`${API}${ruta}`, {
