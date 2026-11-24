@@ -178,19 +178,39 @@ function App() {
     setTexto('')
   }
 
-  async function alternarCompletada(id: number) {
-    const respuesta = await pedir(`/tareas/${id}`, token, { method: 'PATCH' })
-    if (sesionVencida(respuesta) || !respuesta.ok) return
+  // async function alternarCompletada(id: number) {
+  //   const respuesta = await pedir(`/tareas/${id}`, token, { method: 'PATCH' })
+  //   if (sesionVencida(respuesta) || !respuesta.ok) return
 
-    const actualizada: Tarea = await respuesta.json()
-    setTareas(tareas.map((t) => (t.id === id ? actualizada : t)))
+  //   const actualizada: Tarea = await respuesta.json()
+  //   setTareas(tareas.map((t) => (t.id === id ? actualizada : t)))
+  // }
+
+    async function alternarCompletada(id: number) {
+    const tarea = tareas.find((t) => t.id === id)
+    if (!tarea) return
+    const nuevoValor = !tarea.completada
+    const anteriores = tareas
+
+    setTareas(
+      tareas.map((t) => (t.id === id ? { ...t, completada: nuevoValor } : t))
+    )
+
+    const respuesta = await pedir(`/tareas/${id}`, token, {
+      method: 'PATCH',
+      body: JSON.stringify({ completada: nuevoValor }),
+    })
+    if (sesionVencida(respuesta)) return
+    if (!respuesta.ok) setTareas(anteriores)
   }
 
   async function eliminarTarea(id: number) {
-    const respuesta = await pedir(`/tareas/${id}`, token, { method: 'DELETE' })
-    if (sesionVencida(respuesta) || !respuesta.ok) return
-
+    const anteriores = tareas
     setTareas(tareas.filter((t) => t.id !== id))
+
+    const respuesta = await pedir(`/tareas/${id}`, token, { method: 'DELETE' })
+    if (sesionVencida(respuesta)) return
+    if (!respuesta.ok) setTareas(anteriores)
   }
 
   if (!token && modo === 'verificar') {
