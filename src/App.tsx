@@ -178,13 +178,6 @@ function App() {
     setTexto('')
   }
 
-  // async function alternarCompletada(id: number) {
-  //   const respuesta = await pedir(`/tareas/${id}`, token, { method: 'PATCH' })
-  //   if (sesionVencida(respuesta) || !respuesta.ok) return
-
-  //   const actualizada: Tarea = await respuesta.json()
-  //   setTareas(tareas.map((t) => (t.id === id ? actualizada : t)))
-  // }
 
     async function alternarCompletada(id: number) {
     const tarea = tareas.find((t) => t.id === id)
